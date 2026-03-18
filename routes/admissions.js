@@ -7,6 +7,7 @@ const express = require("express");
 const multer  = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const { v4: uuidv4 } = require("uuid");
 const { StudentAdmission, Session } = require("../database/db");
 const { getCookies } = require("./auth");
 const router  = express.Router();
@@ -18,19 +19,47 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ── 2. MULTER + CLOUDINARY STORAGE ───────────────────────────────────────────
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "student_receipts",
-    allowed_formats: ["jpg", "png", "webp", "pdf"],
-    public_id: (req, file) => `receipt_${Date.now()}`,
-  },
+const upload = multer({ 
+  storage: multer.memoryStorage(), 
+  limits: { fileSize: 5 * 1024 * 1024 } 
 });
 
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5 MB
+// =============================================================================
+// GET /api/upload-signature
+// Generates a secure signature for direct frontend upload to Cloudinary
+// =============================================================================
+router.get("/upload-signature", (req, res) => {
+  try {
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const folder = "student_receipts";
+    
+    // Cloudinary expects comma-separated string for signing allowed_formats
+    const allowed_formats = "jpg,png,webp,pdf";
+
+    const params_to_sign = {
+      timestamp: timestamp,
+      folder: folder,
+      allowed_formats: allowed_formats
+    };
+
+    const signature = cloudinary.utils.api_sign_request(
+      params_to_sign,
+      process.env.CLOUDINARY_API_SECRET
+    );
+
+    res.status(200).json({
+      success: true,
+      signature,
+      timestamp,
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      folder: folder,
+      allowed_formats: allowed_formats
+    });
+  } catch (error) {
+    console.error("❌ Error generating signature:", error);
+    res.status(500).json({ success: false, message: "Failed to generate upload signature." });
+  }
 });
 
 // =============================================================================
@@ -38,7 +67,6 @@ const upload = multer({
 // =============================================================================
 router.post(
   "/submit-admission",
-  upload.single("receipt"),
   async (req, res) => {
     try {
       // ── 1. Validate text fields ──────────────────────────────────────────
@@ -61,10 +89,11 @@ router.post(
       }
 
       // ── 2. Validate file upload ──────────────────────────────────────────
-      if (!req.file || !req.file.path) {
+      const { receipt_url } = req.body;
+      if (!receipt_url) {
         return res.status(400).json({
           success: false,
-          message: "Payment receipt file is required.",
+          message: "Payment receipt image URL is required.",
         });
       }
 
@@ -93,9 +122,9 @@ router.post(
         whatsapp_number:     whatsapp_number.trim(),
         course_selected:     course_selected.trim(),
         transaction_id:      transaction_id.trim(),
-        receipt_image_url:   req.file.path, // Cloudinary URL
+        receipt_image_url:   receipt_url, // URL from direct Cloudinary upload
         user_id:             userId,
-        verification_status: "Verified" // Auto-verify as per original logic
+        verification_status: "Verified"
       });
 
       return res.status(201).json({

@@ -633,7 +633,7 @@
         }
 
         // ════════════════════════════════════════════════════════════════════
-        // FORM SUBMISSION — sends data to the backend API via fetch
+        // FORM SUBMISSION — Direct Cloudinary Upload + Backend Data Save
         // ════════════════════════════════════════════════════════════════════
         const API_URL = '';
 
@@ -646,17 +646,62 @@
 
             // Set loading state
             btn.disabled = true;
-            btnText.textContent = 'Submitting...';
+            btnText.textContent = 'Uploading Receipt...';
             btnIcon.className = 'fa-solid fa-spinner fa-spin text-lg';
 
             try {
-                // Build FormData — picks up all named inputs including the file
-                const formData = new FormData(this);
+                const fileInput = document.getElementById('receipt');
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    showToast('error', 'Missing File', 'Please select a payment receipt.');
+                    return;
+                }
+                const file = fileInput.files[0];
+
+                // 1. Get Signed Signature from Backend
+                const sigRes = await fetch(API_URL + '/api/upload-signature');
+                const sigData = await sigRes.json();
+                if (!sigData.success) {
+                    throw new Error(sigData.message || "Failed to get upload signature.");
+                }
+
+                // 2. Upload directly to Cloudinary
+                const cloudFormData = new FormData();
+                cloudFormData.append("file", file);
+                cloudFormData.append("api_key", sigData.api_key);
+                cloudFormData.append("timestamp", sigData.timestamp);
+                cloudFormData.append("signature", sigData.signature);
+                cloudFormData.append("folder", sigData.folder);
+                cloudFormData.append("allowed_formats", sigData.allowed_formats);
+
+                const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${sigData.cloud_name}/auto/upload`, {
+                    method: 'POST',
+                    body: cloudFormData
+                });
+
+                const cloudResult = await cloudRes.json();
+                if (!cloudRes.ok) {
+                    console.error("Cloudinary Error:", cloudResult);
+                    throw new Error(cloudResult.error?.message || "Cloudinary upload failed (Signature or Config issue).");
+                }
+
+                const receiptUrl = cloudResult.secure_url;
+
+                // 3. Submit combined data to Backend
+                btnText.textContent = 'Saving Application...';
+                
+                const payload = {
+                    full_name:        document.getElementById('fullName').value,
+                    email:            document.getElementById('email').value,
+                    whatsapp_number:  document.getElementById('whatsapp').value,
+                    program_selected: document.getElementById('program_selected').value,
+                    transaction_id:   document.getElementById('tid').value,
+                    receipt_url:      receiptUrl
+                };
 
                 const response = await fetch(API_URL + '/api/submit-admission', {
                     method: 'POST',
-                    body: formData,
-                    // Do NOT set Content-Type — browser sets it with the correct multipart boundary
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
                 });
 
                 const result = await response.json();
@@ -664,19 +709,22 @@
                 if (response.ok && result.success) {
                     showToast('success', 'Application Submitted!', 'Your admission form is under review. We will notify you soon.');
                     this.reset();
-                    // Reset the file upload UI
+                    // Reset File UI manually since reset() doesn't clear custom states
                     document.getElementById('uploadPlaceholder').classList.remove('hidden');
                     const preview = document.getElementById('uploadPreview');
-                    preview.classList.add('hidden');
-                    preview.classList.remove('flex');
+                    if (preview) {
+                        preview.classList.add('hidden');
+                        preview.classList.remove('flex');
+                    }
                 } else if (response.status === 409) {
-                    showToast('error', 'Duplicate Transaction ID', result.message || 'This TID has already been submitted.');
+                    showToast('error', 'Duplicate TID', result.message || 'Already submitted.');
                 } else {
-                    showToast('error', 'Submission Failed', result.message || 'Something went wrong. Please try again.');
+                    showToast('error', 'Submission Failed', result.message || 'Something went wrong.');
                 }
 
-            } catch (networkError) {
-                showToast('error', 'Connection Error', 'Cannot reach the server. Make sure the backend is running (node server.js).');
+            } catch (error) {
+                console.error("Process Error:", error);
+                showToast('error', 'Process Failed', error.message || 'Check your connection and try again.');
             } finally {
                 btn.disabled = false;
                 btnText.textContent = 'Submit Application';
