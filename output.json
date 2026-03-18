@@ -1,0 +1,28 @@
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    {
+      "id": 2,
+      "full_name": "Ali Khan",
+      "email": "ali@example.com",
+      "whatsapp_number": "03001234567",
+      "course_selected": "Computer Science",
+      "transaction_id": "TID-1773681124853",
+      "receipt_image_url": "http://localhost:3000/uploads/receipt_96506a1a-6f38-425b-99dd-6196b2d87fdf.jpg",
+      "verification_status": "Pending",
+      "submitted_at": "2026-03-16T17:12:05Z"
+    },
+    {
+      "id": 1,
+      "full_name": "Ali Khan",
+      "email": "ali@example.com",
+      "whatsapp_number": "03001234567",
+      "course_selected": "Computer Science",
+      "transaction_id": "TID-1773680985362",
+      "receipt_image_url": "http://localhost:3000/uploads/receipt_ff51476a-8f83-4d91-aca4-1e92a038e17e.jpg",
+      "verification_status": "Pending",
+      "submitted_at": "2026-03-16T17:09:45Z"
+    }
+  ]
+}

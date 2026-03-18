@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Student Admissions</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* =========================================================================
+       CSS RESET & VARIABLES
+       ========================================================================= */
+    :root {
+      --bg-dark: #0f172a;               /* Slate 900 */
+      --bg-panel: rgba(30, 41, 59, 0.6); /* Slate 800 with opacity */
+      --border-light: rgba(255, 255, 255, 0.1);
+      
+      --text-main: #f8fafc;             /* Slate 50 */
+      --text-muted: #94a3b8;            /* Slate 400 */
+      
+      --accent-primary: #3b82f6;        /* Blue 500 */
+      --accent-hover: #2563eb;          /* Blue 600 */
+      
+      --status-pending-bg: rgba(234, 179, 8, 0.15); /* Yellow 500 */
+      --status-pending-text: #fde047;   /* Yellow 300 */
+      
+      --status-verified-bg: rgba(34, 197, 94, 0.15); /* Green 500 */
+      --status-verified-text: #86efac;  /* Green 300 */
+      
+      --btn-verify: linear-gradient(135deg, #10b981, #059669);
+      --btn-verify-hover: linear-gradient(135deg, #34d399, #10b981);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      /* Dynamic animated background gradient */
+      background: radial-gradient(circle at top left, #1e1b4b, #0f172a 40%, #020617 100%);
+      background-attachment: fixed;
+    }
+
+    /* =========================================================================
+       LAYOUT & GLASSMORPHISM
+       ========================================================================= */
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-section {
+      margin-bottom: 2.5rem;
+      animation: fadeInDown 0.6s ease-out;
+    }
+
+    .header-section h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .header-section p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .glass-panel {
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: fadeInUp 0.8s ease-out;
+      overflow: hidden;
+    }
+
+    /* =========================================================================
+       TABLE STYLING
+       ========================================================================= */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 12px;
+      /* Custom Scrollbar for the table wrapper */
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent-primary) transparent;
+    }
+
+    .table-responsive::-webkit-scrollbar { height: 8px; }
+    .table-responsive::-webkit-scrollbar-track { background: transparent; }
+    .table-responsive::-webkit-scrollbar-thumb { background: var(--accent-primary); border-radius: 4px; }
+
+    table {
+      width: 100%;
+      border-collapse: separate; /* Required for border-radius on rows */
+      border-spacing: 0 8px;     /* Space between rows */
+      min-width: 1000px;
+    }
+
+    th {
+      text-align: left;
+      padding: 1rem 1.25rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    td {
+      padding: 1.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      font-size: 0.95rem;
+      vertical-align: middle;
+      border-top: 1px solid transparent;
+      border-bottom: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    /* Row hover effect */
+    tbody tr:hover td {
+      background: rgba(255, 255, 255, 0.06);
+      cursor: default;
+    }
+
+    /* Rounded corners for the separated rows */
+    td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; border-left: 1px solid transparent; }
+    td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; border-right: 1px solid transparent; }
+    
+    tbody tr:hover td:first-child { border-left-color: var(--accent-primary); }
+
+    /* =========================================================================
+       ELEMENTS (Badges, Links, Buttons)
+       ========================================================================= */
+    .student-info { display: flex; flex-direction: column; gap: 4px; }
+    .student-name { font-weight: 600; color: #fff; font-size: 1.05rem; }
+    .student-email { font-size: 0.85rem; color: var(--text-muted); }
+
+    .tid-badge {
+      font-family: monospace;
+      background: rgba(0,0,0,0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      color: #cbd5e1;
+    }
+
+    .receipt-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .receipt-link:hover { color: #93c5fd; text-decoration: underline; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: capitalize;
+    }
+    .status-pending { background: var(--status-pending-bg); color: var(--status-pending-text); border: 1px solid rgba(234, 179, 8, 0.3); }
+    .status-verified { background: var(--status-verified-bg); color: var(--status-verified-text); border: 1px solid rgba(34, 197, 94, 0.3); }
+
+    /* Status Dot */
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-pending .status-dot { background-color: var(--status-pending-text); box-shadow: 0 0 8px var(--status-pending-text); }
+    .status-verified .status-dot { background-color: var(--status-verified-text); box-shadow: 0 0 8px var(--status-verified-text); }
+
+    .action-group { display: flex; gap: 10px; align-items: center; }
+
+    .btn-verify {
+      background: var(--btn-verify);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-verify:hover {
+      background: var(--btn-verify-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+    .btn-verify:active { transform: translateY(0); }
+
+    /* Loader */
+    .loader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 4rem;
+      gap: 8px;
+    }
+    .loader span {
+      width: 12px; height: 12px;
+      background: var(--accent-primary);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .loader span:nth-child(1) { animation-delay: -0.32s; }
+    .loader span:nth-child(2) { animation-delay: -0.16s; }
+
+    /* Empty State */
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+    .empty-state svg { width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.5; }
+
+    /* =========================================================================
+       ANIMATIONS
+       ========================================================================= */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <div class="header-section">
+      <h1>Admin Dashboard</h1>
+      <p>Manage and verify student admission seamlessly.</p>
+    </div>
+
+    <div class="glass-panel">
+      <div id="loading" class="loader">
+        <span></span><span></span><span></span>
+      </div>
+
+      <div id="error-state" class="empty-state" style="display: none; color: #ef4444;"></div>
+
+      <div id="table-container" class="table-responsive" style="display: none;">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Student Details</th>
+              <th>Program Selected</th>
+              <th>Transaction ID</th>
+              <th>Receipt</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="admissions-body">
+            <!-- Rows will be populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchAdmissions();
+    });
+
+    async function fetchAdmissions() {
+      try {
+        const response = await fetch('/api/admissions');
+        const result = await response.json();
+        
+        document.getElementById('loading').style.display = 'none';
+
+        if (!result.success) {
+          showError("Failed to fetch data from the server.");
+          return;
+        }
+
+        if (result.count === 0 || !result.data || result.data.length === 0) {
+          showEmptyState();
+          return;
+        }
+
+        renderTable(result.data);
+      } catch (error) {
+        document.getElementById('loading').style.display = 'none';
+        showError("Network error. Make sure the backend server is running.");
+        console.error("Fetch Error:", error);
+      }
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('admissions-body');
+      tbody.innerHTML = ''; // Clear existing
+      
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        
+        // Status Setup
+        const isVerified = item.verification_status.toLowerCase() !== 'pending';
+        const statusClass = isVerified ? 'status-verified' : 'status-pending';
+        
+        // WhatsApp link generation
+        const waLink = `https://wa.me/${item.whatsapp_number.replace(/\D/g,'')}`;
+
+        tr.innerHTML = `
+          <td><span style="color:var(--text-muted)">#${item.id}</span></td>
+          <td>
+            <div class="student-info">
+              <span class="student-name">${item.full_name}</span>
+              <span class="student-email">${item.email}</span>
+              <a href="${waLink}" target="_blank" style="color:#22c55e; font-size:0.8rem; text-decoration:none; display:flex; align-items:center; gap:4px; margin-top:2px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                ${item.whatsapp_number}
+              </a>
+            </div>
+          </td>
+          <td>
+            <span style="background: rgba(96, 165, 250, 0.1); color: #93c5fd; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; border: 1px solid rgba(96,165,250,0.2);">
+              ${item.course_selected || 'N/A'}
+            </span>
+          </td>
+          <td><span class="tid-badge">${item.transaction_id}</span></td>
+          <td>
+            <a href="${item.receipt_image_url}" target="_blank" class="receipt-link" title="Open Receipt Image">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+              View Receipt
+            </a>
+          </td>
+          <td>
+            <span class="status-badge ${statusClass}">
+              <span class="status-dot"></span>
+              ${item.verification_status}
+            </span>
+          </td>
+          <td>
+            <div class="action-group">
+              ${!isVerified ? `
+                <button class="btn-verify" onclick="verifyStudent(${item.id}, this)">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                  Verify
+                </button>
+              ` : `
+                <span style="color: var(--status-verified-text); font-size: 0.85rem; font-weight: 500;">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Verified
+                </span>
+              `}
+            </div>
+          </td>
+        `;
+        
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('table-container').style.display = 'block';
+    }
+
+    function showEmptyState() {
+      const el = document.getElementById('error-state');
+      el.innerHTML = `
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"></path></svg>
+        <h3>No Admissions Submissions Yet</h3>
+        <p style="margin-top: 8px; font-size: 0.95rem;">Incoming form submissions will appear here securely.</p>
+      `;
+      el.style.display = 'block';
+      el.style.color = 'var(--text-muted)';
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-state');
+      el.innerHTML = `
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        <h3 style="margin-top:12px;">Connection Error</h3>
+        <p style="margin-top: 8px; font-size: 0.95rem;">${msg}</p>
+      `;
+      el.style.display = 'block';
+    }
+
+    // Manual Verify Button trigger (UI ONLY for now as requested)
+    window.verifyStudent = function(id, btnElement) {
+      btnElement.innerHTML = `
+        <span style="display:inline-block; width:14px; height:14px; border:2px solid #fff; border-bottom-color:transparent; border-radius:50%; animation: spin 1s linear infinite; margin-right:6px;"></span>
+        Verifying...
+      `;
+      
+      // Add keyframes for inline spinner dynamically if not present
+      if(!document.getElementById('spin-anim')) {
+        const style = document.createElement('style');
+        style.id = 'spin-anim';
+        style.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
+        document.head.appendChild(style);
+      }
+
+      // Real network request to the backend API
+      fetch(`/api/admissions/${id}/verify`, { method: 'PATCH' })
+        .then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            // Change the row's Status badge visually
+            const tr = btnElement.closest('tr');
+            const badgeCell = tr.querySelectorAll('td')[5];
+            
+            badgeCell.innerHTML = `
+              <span class="status-badge status-verified">
+                <span class="status-dot"></span>
+                Verified
+              </span>
+            `;
+            
+            // Change the button to Verified UI
+            const actionCell = tr.querySelectorAll('td')[6];
+            actionCell.innerHTML = `
+              <div class="action-group">
+                <span style="color: var(--status-verified-text); font-size: 0.85rem; font-weight: 500;">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Verified
+                </span>
+              </div>
+            `;
+          } else {
+            alert('Verification Failed: ' + result.message);
+            btnElement.innerHTML = `
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+              Verify
+            `;
+          }
+        })
+        .catch(err => {
+          console.error("Error verifying:", err);
+          alert('Network Error during verification');
+          btnElement.innerHTML = `
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            Verify
+          `;
+        });
+    }
+  </script>
+</body>
+</html>

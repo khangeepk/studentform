@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - EduPortal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        sidebar: '#0f172a',
+                    },
+                    boxShadow: { 'soft': '0 4px 20px -2px rgba(0,0,0,0.05)', 'glow': '0 0 15px rgba(59,130,246,0.5)' }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media (max-width: 768px) {
+            .sidebar-open { transform: translateX(0); }
+            .sidebar-closed { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 antialiased overflow-hidden">
+
+<div class="flex h-screen w-full relative">
+    <!-- Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-gray-900/50 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-sidebar text-gray-300 w-72 flex-shrink-0 flex flex-col transition-transform duration-300 z-30 fixed md:relative h-full sidebar-closed md:translate-x-0 shadow-xl md:shadow-none">
+        <div class="h-20 flex items-center px-6 border-b border-gray-800">
+            <div class="flex items-center gap-3 text-white">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-glow">
+                    <i class="fa-solid fa-graduation-cap text-xl"></i>
+                </div>
+                <span class="text-xl font-bold tracking-wide">EduPortal</span>
+            </div>
+            <button class="ml-auto text-gray-400 hover:text-white md:hidden" onclick="toggleSidebar()">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+            <!-- Active -->
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-brand-600/20 to-brand-600/5 border border-brand-500/20 shadow-sm relative overflow-hidden">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-500 rounded-r-md"></div>
+                <i class="fa-solid fa-chart-pie w-5 text-center text-brand-400"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="profile.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors">
+                <i class="fa-regular fa-user w-5 text-center"></i>
+                <span class="font-medium">My Profile</span>
+            </a>
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors">
+                <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i>
+                <span class="font-medium">Submit Admission & Fee</span>
+            </a>
+            <a href="#" onclick="openStatusModal(event)" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors group">
+                <i class="fa-solid fa-magnifying-glass w-5 text-center group-hover:text-brand-400 transition-colors"></i>
+                <span class="font-medium">Track Status</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-800">
+            <button onclick="doLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors">
+                <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i>
+                <span class="font-medium">Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col relative overflow-hidden h-full">
+        <!-- Header -->
+        <header class="bg-white/80 backdrop-blur-md shadow-sm h-20 flex items-center justify-between px-6 lg:px-10 z-10 border-b border-gray-200">
+            <button class="md:hidden text-gray-500 hover:text-gray-700" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars text-2xl"></i>
+            </button>
+            <div class="hidden md:block">
+                <h1 id="welcomeHeading" class="text-2xl font-bold text-gray-800 tracking-tight">My Dashboard 👋</h1>
+                <p class="text-sm text-gray-500 mt-0.5">Track your admission applications and payment status.</p>
+            </div>
+            <div class="md:hidden text-lg font-bold text-gray-800">Dashboard</div>
+            <div class="flex items-center gap-4">
+                <a href="profile.html" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                    <div id="avatarInitials" class="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center text-white font-bold text-base shadow-sm">?</div>
+                    <div class="hidden sm:block text-left">
+                        <p id="headerName" class="text-sm font-semibold text-gray-700 leading-none">Loading...</p>
+                        <p class="text-xs text-gray-500 mt-1">Student</p>
+                    </div>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main scrollable content -->
+        <main class="flex-1 overflow-y-auto bg-[#f8fafc] p-4 md:p-8">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                <div class="bg-white rounded-2xl shadow-soft border border-gray-100 p-5 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-brand-600">
+                        <i class="fa-solid fa-file-lines text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Total</p>
+                        <p id="countTotal" class="text-2xl font-bold text-gray-800">-</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-soft border border-gray-100 p-5 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center text-yellow-600">
+                        <i class="fa-solid fa-clock text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Pending</p>
+                        <p id="countPending" class="text-2xl font-bold text-gray-800">-</p>
+                    </div>
+                </div>
+                <div class="col-span-2 md:col-span-1 bg-white rounded-2xl shadow-soft border border-gray-100 p-5 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+                        <i class="fa-solid fa-circle-check text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Verified</p>
+                        <p id="countVerified" class="text-2xl font-bold text-gray-800">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Applications Table -->
+            <div class="bg-white rounded-3xl shadow-soft border border-gray-100 overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-800">My Applications</h2>
+                    <a href="index.html" class="text-sm text-brand-600 font-semibold hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> New Submission
+                    </a>
+                </div>
+
+                <div id="loadingState" class="flex justify-center items-center p-16 gap-2">
+                    <div class="w-3 h-3 bg-brand-500 rounded-full animate-bounce" style="animation-delay: -0.32s"></div>
+                    <div class="w-3 h-3 bg-brand-500 rounded-full animate-bounce" style="animation-delay: -0.16s"></div>
+                    <div class="w-3 h-3 bg-brand-500 rounded-full animate-bounce"></div>
+                </div>
+
+                <div id="emptyState" class="hidden text-center p-16 text-gray-500">
+                    <i class="fa-solid fa-inbox text-4xl opacity-30 mb-4"></i>
+                    <p class="font-medium">No applications yet.</p>
+                    <p class="text-sm mt-1">Submit your first admission form to get started!</p>
+                    <a href="index.html" class="inline-block mt-4 px-5 py-2 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors">Submit Now</a>
+                </div>
+
+                <div id="tableContainer" class="hidden overflow-x-auto">
+                    <table class="w-full text-sm min-w-[600px]">
+                        <thead>
+                            <tr class="border-b border-gray-100">
+                                <th class="text-left p-4 text-xs text-gray-500 uppercase tracking-wider font-semibold">Program</th>
+                                <th class="text-left p-4 text-xs text-gray-500 uppercase tracking-wider font-semibold">Transaction ID</th>
+                                <th class="text-left p-4 text-xs text-gray-500 uppercase tracking-wider font-semibold">Submitted</th>
+                                <th class="text-left p-4 text-xs text-gray-500 uppercase tracking-wider font-semibold">Receipt</th>
+                                <th class="text-left p-4 text-xs text-gray-500 uppercase tracking-wider font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Status Modal (reused from index.html) -->
+<div id="statusModal" class="fixed inset-0 bg-gray-900/60 z-[100] hidden items-center justify-center backdrop-blur-sm transition-all duration-300 opacity-0 pointer-events-none">
+    <div class="bg-white rounded-3xl w-full max-w-md mx-4 shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="statusModalContent">
+        <div class="bg-gradient-to-r from-brand-600 to-brand-700 p-6 flex justify-between items-center text-white">
+            <h3 class="text-xl font-bold flex items-center gap-2"><i class="fa-solid fa-satellite-dish"></i> Check Status</h3>
+            <button onclick="closeStatusModal()" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-600 text-sm mb-5">Enter your <strong>Transaction ID (TID)</strong> to track the live verification status.</p>
+            <div class="relative mb-4">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-hashtag"></i></div>
+                <input type="text" id="trackTidInput" class="w-full px-4 py-3 pl-11 rounded-xl border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none font-mono transition-all" placeholder="e.g. TID-1928374650">
+            </div>
+            <button onclick="checkStatus()" id="checkStatusBtn" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 flex items-center justify-center rounded-xl transition-colors">
+                <span id="checkStatusBtnText">Track Application</span>
+            </button>
+            <div id="statusResult" class="mt-6 hidden rounded-2xl border border-gray-100 p-5 bg-gray-50/50">
+                <div class="flex items-start justify-between mb-4 flex-wrap gap-2">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Student Name</p>
+                        <p id="resName" class="font-bold text-gray-800"></p>
+                    </div>
+                    <div id="resBadge" class="px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap"></div>
+                </div>
+                <div class="space-y-2 text-sm text-gray-600 border-t border-gray-100 pt-3">
+                    <div class="flex justify-between"><span class="text-gray-500">Transaction ID:</span><span id="resTid" class="font-mono text-gray-800"></span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Submitted On:</span><span id="resDate" class="text-gray-800"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = '';
+
+    async function loadDashboard() {
+        try {
+            // Check auth
+            const meRes = await fetch(API_URL + '/api/auth/me');
+            if (!meRes.ok) { window.location.href = 'login.html'; return; }
+            const meData = await meRes.json();
+            if (!meData.success) { window.location.href = 'login.html'; return; }
+
+            const user = meData.user;
+            document.getElementById('welcomeHeading').textContent = `Welcome, ${user.name} 👋`;
+            document.getElementById('headerName').textContent = user.name;
+            document.getElementById('avatarInitials').textContent = user.name.charAt(0).toUpperCase();
+
+            // Fetch this user's admissions
+            const admRes = await fetch(API_URL + '/api/my-admissions');
+            const admData = await admRes.json();
+
+            document.getElementById('loadingState').classList.add('hidden');
+
+            const rows = admData.data || [];
+            const totalCount = rows.length;
+            const pendingCount = rows.filter(r => r.verification_status === 'Pending').length;
+            const verifiedCount = rows.filter(r => r.verification_status === 'Verified').length;
+
+            document.getElementById('countTotal').textContent = totalCount;
+            document.getElementById('countPending').textContent = pendingCount;
+            document.getElementById('countVerified').textContent = verifiedCount;
+
+            if (totalCount === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+            } else {
+                const tbody = document.getElementById('tableBody');
+                tbody.innerHTML = '';
+                rows.forEach(r => {
+                    const status = r.verification_status || 'Pending';
+                    let badgeClass = 'bg-yellow-50 text-yellow-700 border-yellow-200';
+                    let dot = 'bg-yellow-400';
+                    if (status === 'Verified') { badgeClass = 'bg-green-50 text-green-700 border-green-200'; dot = 'bg-green-500'; }
+                    if (status === 'Rejected') { badgeClass = 'bg-red-50 text-red-700 border-red-200'; dot = 'bg-red-500'; }
+
+                    const date = new Date(r.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-gray-50 hover:bg-gray-50/70 transition-colors';
+                    tr.innerHTML = `
+                        <td class="p-4 font-medium text-gray-800">${r.course_selected || 'N/A'}</td>
+                        <td class="p-4 font-mono text-gray-600 text-xs">${r.transaction_id}</td>
+                        <td class="p-4 text-gray-500">${date}</td>
+                        <td class="p-4">
+                            <a href="${r.receipt_image_url}" target="_blank" class="text-brand-600 hover:underline flex items-center gap-1 text-xs font-medium">
+                                <i class="fa-solid fa-link"></i> View
+                            </a>
+                        </td>
+                        <td class="p-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeClass}">
+                                <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>
+                                ${status}
+                            </span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('tableContainer').classList.remove('hidden');
+            }
+        } catch(err) {
+            console.error(err);
+            window.location.href = 'login.html';
+        }
+    }
+    
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('sidebar-closed');
+        sidebar.classList.toggle('sidebar-open');
+        overlay.classList.toggle('hidden');
+    }
+
+    async function doLogout() {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = 'login.html';
+    }
+
+    function openStatusModal(e) {
+        if(e) e.preventDefault();
+        const modal = document.getElementById('statusModal');
+        const content = document.getElementById('statusModalContent');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }, 10);
+        document.getElementById('trackTidInput').focus();
+    }
+
+    function closeStatusModal() {
+        const modal = document.getElementById('statusModal');
+        const content = document.getElementById('statusModalContent');
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        content.classList.remove('scale-100');
+        content.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('trackTidInput').value = '';
+            document.getElementById('statusResult').classList.add('hidden');
+        }, 300);
+    }
+
+    async function checkStatus() {
+        const tidInput = document.getElementById('trackTidInput').value.trim();
+        if(!tidInput) return;
+        const btn = document.getElementById('checkStatusBtn');
+        const btnText = document.getElementById('checkStatusBtnText');
+        btn.disabled = true;
+        btnText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Searching...';
+        try {
+            const response = await fetch(`/api/admissions/status/${encodeURIComponent(tidInput)}`);
+            const result = await response.json();
+            const resArea = document.getElementById('statusResult');
+            if (response.ok && result.success) {
+                const data = result.data;
+                document.getElementById('resName').textContent = data.full_name;
+                document.getElementById('resTid').textContent = data.transaction_id;
+                document.getElementById('resDate').textContent = new Date(data.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const badge = document.getElementById('resBadge');
+                if (data.verification_status === 'Verified') {
+                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-green-50 border-green-200 text-green-600 flex items-center gap-1';
+                    badge.innerHTML = '<i class="fa-solid fa-check-circle"></i> VERIFIED';
+                } else if (data.verification_status === 'Rejected') {
+                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-red-50 border-red-200 text-red-600 flex items-center gap-1';
+                    badge.innerHTML = '<i class="fa-solid fa-times-circle"></i> REJECTED';
+                } else {
+                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-yellow-50 border-yellow-200 text-yellow-600 flex items-center gap-1';
+                    badge.innerHTML = '<i class="fa-solid fa-clock"></i> PENDING';
+                }
+                resArea.classList.remove('hidden');
+            } else {
+                resArea.classList.add('hidden');
+                alert(result.message || 'Not found');
+            }
+        } catch(err) {
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btnText.textContent = 'Track Application';
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - EduPortal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { brand: { 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }, sidebar: '#0f172a' },
+                    boxShadow: { 'soft': '0 4px 20px -2px rgba(0,0,0,0.05)', 'glow': '0 0 15px rgba(59,130,246,0.5)' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .input-field { @apply w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200 outline-none text-gray-700; }
+        .input-label { @apply block text-sm font-medium text-gray-700 mb-1.5; }
+        @media (max-width: 768px) { .sidebar-open { transform: translateX(0); } .sidebar-closed { transform: translateX(-100%); } }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 antialiased overflow-hidden">
+
+<div class="flex h-screen w-full relative">
+    <div id="sidebarOverlay" class="fixed inset-0 bg-gray-900/50 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-sidebar text-gray-300 w-72 flex-shrink-0 flex flex-col transition-transform duration-300 z-30 fixed md:relative h-full sidebar-closed md:translate-x-0 shadow-xl md:shadow-none">
+        <div class="h-20 flex items-center px-6 border-b border-gray-800">
+            <div class="flex items-center gap-3 text-white">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-glow">
+                    <i class="fa-solid fa-graduation-cap text-xl"></i>
+                </div>
+                <span class="text-xl font-bold tracking-wide">EduPortal</span>
+            </div>
+            <button class="ml-auto text-gray-400 hover:text-white md:hidden" onclick="toggleSidebar()">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <!-- Active -->
+            <a href="profile.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-brand-600/20 to-brand-600/5 border border-brand-500/20 shadow-sm relative overflow-hidden">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-500 rounded-r-md"></div>
+                <i class="fa-regular fa-user w-5 text-center text-brand-400"></i>
+                <span class="font-medium">My Profile</span>
+            </a>
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors">
+                <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i>
+                <span class="font-medium">Submit Admission & Fee</span>
+            </a>
+            <a href="#" onclick="openStatusModal(event)" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors group">
+                <i class="fa-solid fa-magnifying-glass w-5 text-center group-hover:text-brand-400 transition-colors"></i>
+                <span class="font-medium">Track Status</span>
+            </a>
+        </nav>
+        <div class="p-4 border-t border-gray-800">
+            <button onclick="doLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors">
+                <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i>
+                <span class="font-medium">Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col relative overflow-hidden h-full">
+        <header class="bg-white/80 backdrop-blur-md shadow-sm h-20 flex items-center justify-between px-6 lg:px-10 z-10 border-b border-gray-200">
+            <button class="md:hidden text-gray-500 hover:text-gray-700" onclick="toggleSidebar()"><i class="fa-solid fa-bars text-2xl"></i></button>
+            <div class="hidden md:block">
+                <h1 class="text-2xl font-bold text-gray-800 tracking-tight">My Profile</h1>
+                <p class="text-sm text-gray-500 mt-0.5">Manage your personal information.</p>
+            </div>
+            <div class="md:hidden text-lg font-bold text-gray-800">My Profile</div>
+            <div id="avatarInitials" class="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center text-white font-bold text-base">?</div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-[#f8fafc] p-4 md:p-8">
+            <div class="max-w-xl mx-auto">
+                <!-- Avatar Card -->
+                <div class="bg-white rounded-3xl shadow-soft border border-gray-100 p-6 mb-6 flex items-center gap-5">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-3xl font-bold shadow-glow flex-shrink-0" id="bigAvatar">?</div>
+                    <div>
+                        <p id="profileName" class="text-xl font-bold text-gray-900">Loading...</p>
+                        <p id="profileEmail" class="text-sm text-gray-500 mt-0.5">-</p>
+                        <span class="inline-block mt-2 text-xs bg-brand-100 text-brand-700 font-semibold px-3 py-1 rounded-full">Student</span>
+                    </div>
+                </div>
+
+                <!-- Edit Form -->
+                <div class="bg-white rounded-3xl shadow-soft border border-gray-100 p-6 md:p-8 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600"></div>
+                    <h2 class="text-lg font-bold text-gray-800 mb-6">Update Information</h2>
+
+                    <div id="successMsg" class="hidden mb-5 p-3 bg-green-50 text-green-700 border border-green-200 rounded-xl text-sm text-center flex items-center gap-2 justify-center">
+                        <i class="fa-solid fa-circle-check"></i> Profile updated successfully!
+                    </div>
+                    <div id="errorMsg" class="hidden mb-5 p-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm text-center"></div>
+
+                    <form id="profileForm" class="space-y-5">
+                        <div>
+                            <label class="input-label" for="name">Full Name</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400"><i class="fa-regular fa-user"></i></div>
+                                <input type="text" id="name" name="name" class="input-field pl-11" placeholder="Full name" required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="input-label" for="email">Email Address</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400"><i class="fa-regular fa-envelope"></i></div>
+                                <input type="email" id="email" name="email" class="input-field pl-11 opacity-60 cursor-not-allowed" disabled>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1 ml-1">Email cannot be changed.</p>
+                        </div>
+
+                        <div>
+                            <label class="input-label" for="phone">WhatsApp / Phone</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400"><i class="fa-brands fa-whatsapp"></i></div>
+                                <input type="tel" id="phone" name="phone" class="input-field pl-11" placeholder="+92 3XX XXXXXXX">
+                            </div>
+                        </div>
+
+                        <hr class="border-gray-100 my-2">
+                        <p class="text-sm font-medium text-gray-700">Change Password <span class="text-gray-400 font-normal">(optional)</span></p>
+
+                        <div>
+                            <label class="input-label" for="newPassword">New Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-lock"></i></div>
+                                <input type="password" id="newPassword" name="newPassword" class="input-field pl-11" placeholder="Leave blank to keep current" minlength="6">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-2">
+                            <button id="submitBtn" type="submit" class="px-8 py-3 rounded-xl bg-gray-900 text-white font-bold shadow-xl hover:shadow-gray-900/30 transition-all hover:-translate-y-0.5">
+                                <span id="submitText">Save Changes</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Status Modal -->
+<div id="statusModal" class="fixed inset-0 bg-gray-900/60 z-[100] hidden items-center justify-center backdrop-blur-sm transition-all duration-300 opacity-0 pointer-events-none">
+    <div class="bg-white rounded-3xl w-full max-w-md mx-4 shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="statusModalContent">
+        <div class="bg-gradient-to-r from-brand-600 to-brand-700 p-6 flex justify-between items-center text-white">
+            <h3 class="text-xl font-bold flex items-center gap-2"><i class="fa-solid fa-satellite-dish"></i> Check Status</h3>
+            <button onclick="closeStatusModal()" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div class="p-6">
+            <div class="relative mb-4">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-hashtag"></i></div>
+                <input type="text" id="trackTidInput" class="w-full px-4 py-3 pl-11 rounded-xl border border-gray-300 bg-gray-50 focus:border-brand-500 outline-none font-mono" placeholder="e.g. TID-1928374650">
+            </div>
+            <button onclick="checkStatus()" id="checkStatusBtn" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 flex items-center justify-center rounded-xl transition-colors">
+                <span id="checkStatusBtnText">Track Application</span>
+            </button>
+            <div id="statusResult" class="mt-6 hidden rounded-2xl border border-gray-100 p-5 bg-gray-50">
+                <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                    <p id="resName" class="font-bold text-gray-800"></p>
+                    <div id="resBadge" class="px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap"></div>
+                </div>
+                <div class="space-y-1.5 text-sm border-t border-gray-100 pt-3">
+                    <div class="flex justify-between"><span class="text-gray-500">TID:</span><span id="resTid" class="font-mono text-gray-800 text-xs"></span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Submitted:</span><span id="resDate" class="text-gray-800"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = '';
+    let currentUserId = null;
+
+    async function loadProfile() {
+        try {
+            const res = await fetch(API_URL + '/api/auth/me');
+            if (!res.ok) { window.location.href = 'login.html'; return; }
+            const data = await res.json();
+            if (!data.success) { window.location.href = 'login.html'; return; }
+            const u = data.user;
+            currentUserId = u.id;
+            document.getElementById('profileName').textContent = u.name;
+            document.getElementById('profileEmail').textContent = u.email;
+            document.getElementById('bigAvatar').textContent = u.name.charAt(0).toUpperCase();
+            document.getElementById('avatarInitials').textContent = u.name.charAt(0).toUpperCase();
+            document.getElementById('name').value = u.name;
+            document.getElementById('email').value = u.email;
+            document.getElementById('phone').value = u.phone || '';
+        } catch(e) {
+            window.location.href = 'login.html';
+        }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('submitText');
+        const successMsg = document.getElementById('successMsg');
+        const errorMsg = document.getElementById('errorMsg');
+        
+        btn.disabled = true;
+        btnText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+        successMsg.classList.add('hidden');
+        errorMsg.classList.add('hidden');
+
+        const payload = {
+            name: document.getElementById('name').value,
+            phone: document.getElementById('phone').value,
+            newPassword: document.getElementById('newPassword').value || null
+        };
+
+        try {
+            const res = await fetch(API_URL + '/api/auth/update-profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (res.ok && result.success) {
+                successMsg.classList.remove('hidden');
+                document.getElementById('profileName').textContent = payload.name;
+                document.getElementById('bigAvatar').textContent = payload.name.charAt(0).toUpperCase();
+                document.getElementById('avatarInitials').textContent = payload.name.charAt(0).toUpperCase();
+                document.getElementById('newPassword').value = '';
+            } else {
+                errorMsg.textContent = result.message || 'Update failed';
+                errorMsg.classList.remove('hidden');
+            }
+        } catch(e) {
+            errorMsg.textContent = 'Network error.';
+            errorMsg.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            btnText.textContent = 'Save Changes';
+        }
+    });
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('sidebar-closed');
+        document.getElementById('sidebar').classList.toggle('sidebar-open');
+        document.getElementById('sidebarOverlay').classList.toggle('hidden');
+    }
+
+    async function doLogout() {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = 'login.html';
+    }
+
+    function openStatusModal(e) {
+        if (e) e.preventDefault();
+        const modal = document.getElementById('statusModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('statusModalContent').classList.remove('scale-95');
+            document.getElementById('statusModalContent').classList.add('scale-100');
+        }, 10);
+    }
+
+    function closeStatusModal() {
+        const modal = document.getElementById('statusModal');
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        document.getElementById('statusModalContent').classList.remove('scale-100');
+        document.getElementById('statusModalContent').classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+    }
+
+    async function checkStatus() {
+        const tid = document.getElementById('trackTidInput').value.trim();
+        if (!tid) return;
+        const btn = document.getElementById('checkStatusBtn');
+        const btnText = document.getElementById('checkStatusBtnText');
+        btn.disabled = true;
+        btnText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>';
+        try {
+            const res = await fetch(`/api/admissions/status/${encodeURIComponent(tid)}`);
+            const result = await res.json();
+            const area = document.getElementById('statusResult');
+            if (res.ok && result.success) {
+                const d = result.data;
+                document.getElementById('resName').textContent = d.full_name;
+                document.getElementById('resTid').textContent = d.transaction_id;
+                document.getElementById('resDate').textContent = new Date(d.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const badge = document.getElementById('resBadge');
+                if (d.verification_status === 'Verified') {
+                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-green-50 border-green-200 text-green-600';
+                    badge.textContent = '✓ VERIFIED';
+                } else {
+                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-yellow-50 border-yellow-200 text-yellow-600';
+                    badge.textContent = '⏳ PENDING';
+                }
+                area.classList.remove('hidden');
+            } else {
+                area.classList.add('hidden');
+                alert(result.message || 'Not found');
+            }
+        } catch(e) { console.error(e); }
+        finally { btn.disabled = false; btnText.textContent = 'Track Application'; }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadProfile);
+</script>
+</body>
+</html>
