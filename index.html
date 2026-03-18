@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Admission & Fee Submission</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6', // primary blue
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        sidebar: '#0f172a', // Slate 900
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 0 15px rgba(59, 130, 246, 0.5)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Styles for Drag & Drop and Inputs */
+        .input-field {
+            @apply w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200 outline-none text-gray-700;
+        }
+        .input-label {
+            @apply block text-sm font-medium text-gray-700 mb-1.5;
+        }
+        
+        .file-drop-area {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 2rem;
+            border: 2px dashed #cbd5e1;
+            border-radius: 1rem;
+            background-color: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .file-drop-area:hover, .file-drop-area.drag-over {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .file-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Bank Card Pattern */
+        .bank-card {
+            background-image: radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 50%);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Mobile sidebar hidden by default, toggled via JS */
+        @media (max-width: 768px) {
+            .sidebar-open {
+                transform: translateX(0);
+            }
+            .sidebar-closed {
+                transform: translateX(-100%);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 antialiased overflow-hidden">
+
+    <div class="flex h-screen w-full relative">
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-gray-900/50 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-sidebar text-gray-300 w-72 flex-shrink-0 flex flex-col transition-transform duration-300 z-30 fixed md:relative h-full sidebar-closed md:translate-x-0 shadow-xl md:shadow-none">
+            
+            <!-- Logo Area -->
+            <div class="h-20 flex items-center px-6 border-b border-gray-800">
+                <div class="flex items-center gap-3 text-white">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-glow">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-wide">EduPortal</span>
+                </div>
+                <!-- Close btn mobile -->
+                <button class="ml-auto text-gray-400 hover:text-white md:hidden" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                
+                <a href="profile.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors">
+                    <i class="fa-regular fa-user w-5 text-center"></i>
+                    <span class="font-medium">My Profile</span>
+                </a>
+
+                <!-- Active Link -->
+                <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-brand-600/20 to-brand-600/5 border border-brand-500/20 shadow-sm relative overflow-hidden group">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-500 rounded-r-md"></div>
+                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center text-brand-400"></i>
+                    <span class="font-medium">Submit Admission & Fee</span>
+                </a>
+
+                <a href="#" onclick="openStatusModal(event)" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors group">
+                    <i class="fa-solid fa-magnifying-glass w-5 text-center group-hover:text-brand-400 transition-colors"></i>
+                    <span class="font-medium">Track Status</span>
+                </a>
+            </nav>
+
+            <!-- Logout Area -->
+            <div class="p-4 border-t border-gray-800">
+                <button onclick="doLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors">
+                    <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i>
+                    <span class="font-medium">Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col relative overflow-hidden h-full">
+            
+            <!-- Header (Top Bar) -->
+            <header class="bg-white/80 backdrop-blur-md shadow-sm h-20 flex items-center justify-between px-6 lg:px-10 z-10 border-b border-gray-200">
+                <!-- Mobile Menu Toggle -->
+                <button class="md:hidden text-gray-500 hover:text-gray-700 transition-colors" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-bars text-2xl"></i>
+                </button>
+
+                <!-- Greeting -->
+                <div class="hidden md:block">
+                    <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Welcome, Student 👋</h1>
+                    <p class="text-sm text-gray-500 mt-0.5">Let's complete your admission process.</p>
+                </div>
+                <!-- Mobile Greeting Minimal -->
+                <div class="md:hidden text-lg font-bold text-gray-800">
+                    Submit Fee
+                </div>
+
+                <!-- Right Header Actions -->
+                <div class="flex items-center gap-5 lg:gap-6">
+                    <!-- Notification Bell -->
+                    <button class="relative p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
+                        <i class="fa-regular fa-bell text-xl"></i>
+                        <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                    </button>
+                    
+                    <div class="w-px h-8 bg-gray-200 hidden sm:block"></div>
+
+                    <!-- User Profile Avatar -->
+                    <button class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                        <!-- Using a high-quality placeholder face image -->
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80" alt="Student Profile" class="w-10 h-10 rounded-full object-cover border-2 border-brand-100 shadow-sm">
+                        <div class="hidden sm:block text-left">
+                            <p class="text-sm font-semibold text-gray-700 leading-none">Alex Johnson</p>
+                            <p class="text-xs text-gray-500 mt-1">Computer Science</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-xs text-gray-400 hidden sm:block"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main scrollable panel -->
+            <main class="flex-1 overflow-y-auto bg-[#f8fafc] p-4 md:p-8 lg:p-10">
+                <div class="max-w-4xl mx-auto pb-10">
+                    
+                    <!-- Decorative header for form -->
+                    <div class="mb-8 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl lg:text-3xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">Admission & Fee Submission</h2>
+                            <p class="text-gray-500 mt-2 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-info text-brand-500 text-sm"></i>
+                                Please fill out the details and upload your payment proof.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- The Main Card -->
+                    <div class="bg-white rounded-3xl shadow-soft overflow-hidden border border-gray-100 relative">
+                        <!-- Top decorative accent -->
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600"></div>
+                        
+                        <form id="admissionForm" class="p-6 md:p-10 space-y-10">
+                            
+                            <!-- Section A: Student Information -->
+                            <section>
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold text-sm">1</div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Student Information</h3>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Full Name -->
+                                    <div>
+                                        <label class="input-label" for="fullName">Full Name</label>
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                                <i class="fa-regular fa-user"></i>
+                                            </div>
+                                            <input type="text" id="fullName" name="full_name" class="input-field pl-11" placeholder="Enter your full name" required>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Email Address -->
+                                    <div>
+                                        <label class="input-label" for="email">Email Address</label>
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                                <i class="fa-regular fa-envelope"></i>
+                                            </div>
+                                            <input type="email" id="email" name="email" class="input-field pl-11" placeholder="you@example.com" required>
+                                        </div>
+                                    </div>
+
+                                    <!-- WhatsApp / Phone Number -->
+                                    <div>
+                                        <label class="input-label" for="whatsapp">WhatsApp / Phone Number</label>
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                                <i class="fa-brands fa-whatsapp"></i>
+                                            </div>
+                                            <input type="tel" id="whatsapp" name="whatsapp_number" class="input-field pl-11" placeholder="+92 3XX XXXXXXX" required>
+                                        </div>
+                                    </div>
+
+                                    <!-- Program & Card Selection -->
+                                    <div>
+                                        <label class="input-label" for="program_selected">Program & Card Selection</label>
+                                        <div class="relative group">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-yellow-500 group-focus-within:text-yellow-600 transition-colors">
+                                                <i class="fa-solid fa-crown"></i>
+                                            </div>
+                                            <select id="program_selected" name="program_selected" class="input-field pl-11 appearance-none bg-no-repeat bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%20%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%236B7280%22%20stroke-width%3D%221.67%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[position:calc(100%-1rem)_center] border-gray-200 hover:border-yellow-400 focus:ring-yellow-500/20 focus:border-yellow-500 focus:ring-2 font-medium text-gray-800 shadow-sm transition-all duration-200" required>
+                                                <option value="" disabled selected>Select Premium Tier...</option>
+                                                <option value="gold_card">Gold Card (Fee: 20,000/-)</option>
+                                                <option value="gold_family_card">Gold Family Card (Fee: 30,000/-)</option>
+                                                <option value="platinum_personal_card">Platinum Personal Card (Fee: 35,000/-)</option>
+                                                <option value="platinum_family_card">Platinum Family Card (Fee: 50,000/-)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <hr class="border-gray-100">
+
+                            <!-- Section B: Official Payment Instructions -->
+                            <section>
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">2</div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Official Payment Instructions</h3>
+                                    <span class="ml-auto bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Trusted</span>
+                                </div>
+
+                                <div class="bg-blue-50/50 border border-blue-100 rounded-2xl p-6 lg:p-8">
+                                    <p class="text-gray-600 mb-6 text-sm lg:text-base leading-relaxed">
+                                        Please deposit your admission/semester fee into one of the following official accounts. Make sure to keep the receipt or take a screenshot of the successful transaction.
+                                    </p>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <!-- Bank 1: UBL -->
+                                        <div class="bank-card bg-gradient-to-br from-[#004b87] to-[#003058] rounded-xl p-5 text-white shadow-lg relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                                            <div class="absolute -right-4 -top-4 opacity-10 text-8xl">
+                                                <i class="fa-solid fa-building-columns"></i>
+                                            </div>
+                                            <div class="relative z-10">
+                                                <div class="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
+                                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                                        <span class="text-[#004b87] font-extrabold text-lg">UBL</span>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="font-bold text-lg tracking-wide">United Bank Limited</h4>
+                                                        <p class="text-blue-200 text-xs uppercase tracking-wider">Official Bank Account</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="space-y-3">
+                                                    <div>
+                                                        <p class="text-blue-200/80 text-xs uppercase tracking-wider mb-0.5">Account Title</p>
+                                                        <p class="font-semibold text-white truncate">Sami Ullah Jan</p>
+                                                    </div>
+                                                    <div class="flex justify-between items-end">
+                                                        <div>
+                                                            <p class="text-blue-200/80 text-xs uppercase tracking-wider mb-0.5">Account No.</p>
+                                                            <p class="font-mono font-medium text-lg tracking-widest text-[#60a5fa] group-hover:text-white transition-colors">0511247411492</p>
+                                                        </div>
+                                                        <div class="text-right">
+                                                            <p class="text-blue-200/80 text-xs uppercase tracking-wider mb-0.5">Branch</p>
+                                                            <p class="font-mono font-medium text-white">0511</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Bank 2: Easypaisa -->
+                                        <div class="bank-card bg-gradient-to-br from-[#10b981] to-[#047857] rounded-xl p-5 text-white shadow-lg relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                                            <div class="absolute -right-4 -top-4 opacity-10 text-8xl">
+                                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                            </div>
+                                            <div class="relative z-10">
+                                                <div class="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
+                                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                                        <span class="text-[#10b981] font-extrabold text-sm leading-tight text-center">Easy<br>paisa</span>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="font-bold text-lg tracking-wide">Telenor Micro Finance</h4>
+                                                        <p class="text-green-200 text-xs uppercase tracking-wider">Mobile Wallet</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="space-y-3">
+                                                    <div>
+                                                        <p class="text-green-200/80 text-xs uppercase tracking-wider mb-0.5">Account Title</p>
+                                                        <p class="font-semibold text-white truncate">Sami Ullah Jan</p>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-green-200/80 text-xs uppercase tracking-wider mb-0.5">Account / Mobile No.</p>
+                                                        <p class="font-mono font-medium text-xl tracking-wider text-[#a7f3d0] group-hover:text-white transition-colors">03125116164</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <hr class="border-gray-100">
+
+                            <!-- Section C: Payment Verification -->
+                            <section>
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 font-bold text-sm">3</div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Payment Verification</h3>
+                                </div>
+
+                                <div class="space-y-6">
+                                    <!-- TID / Reference Number -->
+                                    <div>
+                                        <label class="input-label" for="tid">Transaction ID (TID) / Reference Number <span class="text-red-500">*</span></label>
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                                <i class="fa-solid fa-hashtag text-sm"></i>
+                                            </div>
+                                            <input type="text" id="tid" name="transaction_id" class="input-field pl-11 !border-gray-300 font-mono text-lg" placeholder="e.g. 1928374650X" required>
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-2 ml-1">You can find this number on your bank receipt or SMS confirmation.</p>
+                                    </div>
+
+                                    <!-- File Upload -->
+                                    <div>
+                                        <label class="input-label" for="receipt">Upload Payment Receipt / Screenshot <span class="text-red-500">*</span></label>
+                                        <div class="file-drop-area group mt-1" id="dropArea">
+                                            <input type="file" id="receipt" name="receipt" class="file-input" accept="image/*,.pdf" required onchange="handleFileSelect(event)">
+                                            
+                                            <div id="uploadPlaceholder" class="flex flex-col items-center">
+                                                <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-100 group-hover:scale-110 transition-all duration-300">
+                                                    <i class="fa-solid fa-cloud-arrow-up text-3xl"></i>
+                                                </div>
+                                                <p class="text-gray-700 font-medium mb-1 group-hover:text-blue-600 transition-colors">Click to upload or drag & drop</p>
+                                                <p class="text-gray-400 text-sm mb-4">SVG, PNG, JPG or PDF (MAX. 5MB)</p>
+                                                
+                                                <span class="inline-flex items-center justify-center px-4 py-2 border border-blue-200 text-blue-600 text-sm font-medium rounded-lg bg-white shadow-sm hover:bg-blue-50">
+                                                    Browse Files
+                                                </span>
+                                            </div>
+
+                                            <div id="uploadPreview" class="hidden flex-col items-center w-full">
+                                                <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3">
+                                                    <i class="fa-solid fa-check text-xl"></i>
+                                                </div>
+                                                <p id="fileName" class="text-gray-800 font-medium truncate max-w-xs text-center"></p>
+                                                <p class="text-gray-500 text-sm mt-1 mb-3">File selected successfully</p>
+                                                <button type="button" onclick="resetFile(event)" class="text-sm text-red-500 hover:text-red-700 font-medium underline">
+                                                    Remove file
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- Spacer -->
+                            <div class="pt-4"></div>
+
+                            <!-- Submit Button -->
+                            <div class="flex items-center justify-between border-t border-gray-100 mt-8 pt-8 flex-col-reverse md:flex-row gap-4">
+                                <p class="text-sm text-gray-500 flex items-center gap-2 text-center md:text-left">
+                                    <i class="fa-solid fa-lock text-gray-400"></i>
+                                    Secured with 256-bit encryption
+                                </p>
+                                
+                                <button id="submitBtn" type="submit" class="w-full md:w-auto relative group overflow-hidden pl-8 pr-16 py-4 rounded-xl bg-gray-900 text-white font-bold text-lg shadow-xl shadow-gray-900/20 hover:shadow-gray-900/40 transition-all duration-300 hover:-translate-y-0.5 transform focus:outline-none focus:ring-4 focus:ring-gray-900/30 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0">
+                                    <span id="submitBtnText" class="relative z-10">Submit Application</span>
+                                    <div class="absolute right-0 top-0 bottom-0 w-16 bg-brand-500 flex items-center justify-center transition-transform duration-300 group-hover:bg-brand-400">
+                                        <i id="submitBtnIcon" class="fa-solid fa-arrow-right text-lg transform group-hover:translate-x-1 transition-transform"></i>
+                                    </div>
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                    
+                    <!-- Footer minimal -->
+                    <div class="text-center mt-10 text-gray-500 text-sm">
+                        <p>&copy; 2026 EduPortal System. All rights reserved.</p>
+                        <div class="mt-2 space-x-3">
+                            <a href="#" class="hover:text-gray-800 transition-colors">Privacy Policy</a>
+                            <span>&bull;</span>
+                            <a href="#" class="hover:text-gray-800 transition-colors">Terms of Service</a>
+                            <span>&bull;</span>
+                            <a href="#" class="hover:text-gray-800 transition-colors">Help Center</a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-6 right-6 z-50 hidden max-w-sm w-full transition-all duration-300">
+        <div id="toastInner" class="flex items-start gap-4 p-4 rounded-2xl shadow-2xl border">
+            <div id="toastIcon" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-lg"></div>
+            <div>
+                <p id="toastTitle" class="font-semibold text-sm"></p>
+                <p id="toastMsg" class="text-xs mt-0.5 opacity-80"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Tracking Modal -->
+    <div id="statusModal" class="fixed inset-0 bg-gray-900/60 z-[100] hidden items-center justify-center backdrop-blur-sm transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="bg-white rounded-3xl w-full max-w-md mx-4 shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="statusModalContent">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-brand-600 to-brand-800 p-6 flex justify-between items-center text-white">
+                <h3 class="text-xl font-bold flex items-center gap-2"><i class="fa-solid fa-satellite-dish"></i> Check Status</h3>
+                <button onclick="closeStatusModal()" class="text-white/80 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6">
+                <p class="text-gray-600 text-sm mb-5">Enter your <strong>Transaction ID (TID)</strong> below to track the live verification status of your admission payment.</p>
+                
+                <div class="mb-4">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-hashtag"></i>
+                        </div>
+                        <input type="text" id="trackTidInput" class="input-field pl-11 !border-gray-300 font-mono" placeholder="e.g. TID-1928374650">
+                    </div>
+                </div>
+                
+                <button onclick="checkStatus()" id="checkStatusBtn" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 flex items-center justify-center rounded-xl transition-colors shadow-lg shadow-brand-500/30">
+                    <span id="checkStatusBtnText">Track Application</span>
+                </button>
+
+                <!-- Result Area -->
+                <div id="statusResult" class="mt-6 hidden rounded-2xl border border-gray-100 p-5 bg-gray-50/50">
+                    <div class="flex items-start justify-between mb-4 flex-wrap gap-2">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Student Name</p>
+                            <p id="resName" class="font-bold text-gray-800 truncate max-w-[200px]"></p>
+                        </div>
+                        <div id="resBadge" class="px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap"></div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600 border-t border-gray-100 pt-3">
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="text-gray-500 whitespace-nowrap">Transaction ID:</span>
+                            <span id="resTid" class="font-mono text-gray-800 truncate text-right"></span>
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="text-gray-500 whitespace-nowrap">Submitted On:</span>
+                            <span id="resDate" class="text-gray-800 text-right"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for Interactions -->
+    <script>
+        // Sidebar Toggle for Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('sidebar-closed')) {
+                sidebar.classList.remove('sidebar-closed');
+                sidebar.classList.add('sidebar-open');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.remove('sidebar-open');
+                sidebar.classList.add('sidebar-closed');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Logout
+        async function doLogout() {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = 'login.html';
+        }
+
+        // Soft auth check — load user info if logged in
+        (async function() {
+            try {
+                const res = await fetch('/api/auth/me');
+                const data = await res.json();
+                if (data.success && data.user) {
+                    const nameEl = document.getElementById('headerUserName');
+                    const subtitleEl = document.getElementById('headerUserSub');
+                    if (nameEl) nameEl.textContent = data.user.name;
+                    if (subtitleEl) subtitleEl.textContent = data.user.email.split('@')[0];
+                }
+            } catch(e) { /* not logged in — that's okay */ }
+        })();
+
+        // File Drag & Drop UX
+        const dropArea = document.getElementById('dropArea');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropArea.classList.add('drag-over');
+        }
+
+        function unhighlight(e) {
+            dropArea.classList.remove('drag-over');
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            
+            if (files.length > 0) {
+                document.getElementById('receipt').files = files;
+                updateFileUI(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                updateFileUI(e.target.files[0]);
+            }
+        }
+
+        function updateFileUI(file) {
+            document.getElementById('uploadPlaceholder').classList.add('hidden');
+            const preview = document.getElementById('uploadPreview');
+            preview.classList.remove('hidden');
+            preview.classList.add('flex');
+            document.getElementById('fileName').textContent = file.name;
+        }
+
+        function resetFile(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('receipt').value = '';
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            const preview = document.getElementById('uploadPreview');
+            preview.classList.add('hidden');
+            preview.classList.remove('flex');
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // FORM SUBMISSION — sends data to the backend API via fetch
+        // ════════════════════════════════════════════════════════════════════
+        const API_URL = '';
+
+        document.getElementById('admissionForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const btn      = document.getElementById('submitBtn');
+            const btnText  = document.getElementById('submitBtnText');
+            const btnIcon  = document.getElementById('submitBtnIcon');
+
+            // Set loading state
+            btn.disabled = true;
+            btnText.textContent = 'Submitting...';
+            btnIcon.className = 'fa-solid fa-spinner fa-spin text-lg';
+
+            try {
+                // Build FormData — picks up all named inputs including the file
+                const formData = new FormData(this);
+
+                const response = await fetch(API_URL + '/api/submit-admission', {
+                    method: 'POST',
+                    body: formData,
+                    // Do NOT set Content-Type — browser sets it with the correct multipart boundary
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showToast('success', 'Application Submitted!', 'Your admission form is under review. We will notify you soon.');
+                    this.reset();
+                    // Reset the file upload UI
+                    document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                    const preview = document.getElementById('uploadPreview');
+                    preview.classList.add('hidden');
+                    preview.classList.remove('flex');
+                } else if (response.status === 409) {
+                    showToast('error', 'Duplicate Transaction ID', result.message || 'This TID has already been submitted.');
+                } else {
+                    showToast('error', 'Submission Failed', result.message || 'Something went wrong. Please try again.');
+                }
+
+            } catch (networkError) {
+                showToast('error', 'Connection Error', 'Cannot reach the server. Make sure the backend is running (node server.js).');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Submit Application';
+                btnIcon.className = 'fa-solid fa-arrow-right text-lg transform group-hover:translate-x-1 transition-transform';
+            }
+        });
+
+        // ════════════════════════════════════════════════════════════════════
+        // STATUS TRACKING MODAL & LOGIC
+        // ════════════════════════════════════════════════════════════════════
+        function openStatusModal(e) {
+            if(e) e.preventDefault();
+            const modal = document.getElementById('statusModal');
+            const content = document.getElementById('statusModalContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // small delay for transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+            
+            document.getElementById('trackTidInput').focus();
+        }
+
+        function closeStatusModal() {
+            const modal = document.getElementById('statusModal');
+            const content = document.getElementById('statusModalContent');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                // Reset fields
+                document.getElementById('trackTidInput').value = '';
+                document.getElementById('statusResult').classList.add('hidden');
+            }, 300);
+        }
+
+        async function checkStatus() {
+            const tidInput = document.getElementById('trackTidInput').value.trim();
+            if(!tidInput) {
+                showToast('error', 'Missing Information', 'Please enter your Transaction ID to track status.');
+                return;
+            }
+
+            const btn = document.getElementById('checkStatusBtn');
+            const btnText = document.getElementById('checkStatusBtnText');
+            btn.disabled = true;
+            btnText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Searching...';
+
+            try {
+                const response = await fetch(`${API_URL}/api/admissions/status/${encodeURIComponent(tidInput)}`);
+                const result = await response.json();
+
+                const resArea = document.getElementById('statusResult');
+                
+                if (response.ok && result.success) {
+                    const data = result.data;
+                    document.getElementById('resName').textContent = data.full_name;
+                    document.getElementById('resTid').textContent = data.transaction_id;
+                    
+                    const dateObj = new Date(data.submitted_at);
+                    document.getElementById('resDate').textContent = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                    const badge = document.getElementById('resBadge');
+                    if (data.verification_status.toLowerCase() === 'verified') {
+                        badge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-green-50 border-green-200 text-green-600 flex items-center gap-1';
+                        badge.innerHTML = '<i class="fa-solid fa-check-circle"></i> VERIFIED';
+                    } else if (data.verification_status.toLowerCase() === 'rejected') {
+                        badge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-red-50 border-red-200 text-red-600 flex items-center gap-1';
+                        badge.innerHTML = '<i class="fa-solid fa-times-circle"></i> REJECTED';
+                    } else {
+                        badge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-yellow-50 border-yellow-200 text-yellow-600 flex items-center gap-1';
+                        badge.innerHTML = '<i class="fa-solid fa-clock"></i> PENDING';
+                    }
+
+                    resArea.classList.remove('hidden');
+                } else {
+                    resArea.classList.add('hidden');
+                    showToast('error', 'Not Found', result.message || 'Could not find an application with this TID.');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('error', 'Network Error', 'Could not connect to the server.');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Track Application';
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // TOAST NOTIFICATION HELPER
+        // ════════════════════════════════════════════════════════════════════
+        function showToast(type, title, message) {
+            const toast      = document.getElementById('toast');
+            const toastInner = document.getElementById('toastInner');
+            const toastIcon  = document.getElementById('toastIcon');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMsg   = document.getElementById('toastMsg');
+
+            if (type === 'success') {
+                toastInner.className = 'flex items-start gap-4 p-4 rounded-2xl shadow-2xl border bg-white border-green-200';
+                toastIcon.className  = 'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-lg bg-green-100 text-green-600';
+                toastIcon.innerHTML  = '<i class="fa-solid fa-check"></i>';
+                toastTitle.className = 'font-semibold text-sm text-green-800';
+            } else {
+                toastInner.className = 'flex items-start gap-4 p-4 rounded-2xl shadow-2xl border bg-white border-red-200';
+                toastIcon.className  = 'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-lg bg-red-100 text-red-600';
+                toastIcon.innerHTML  = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                toastTitle.className = 'font-semibold text-sm text-red-800';
+            }
+
+            toastTitle.textContent = title;
+            toastMsg.textContent   = message;
+            toast.classList.remove('hidden');
+
+            setTimeout(() => toast.classList.add('hidden'), 5000);
+        }
+    </script>
+</body>
+</html>
