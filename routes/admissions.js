@@ -28,32 +28,45 @@ const upload = multer({
 // =============================================================================
 router.get("/upload-signature", (req, res) => {
   try {
-    const timestamp = Math.round(new Date().getTime() / 1000);
+    // ── 1. SECURE CONFIG ACCESS ──────────────────────────────────────────────
+    // Ensure we use trimmed keys (Vercel env vars sometimes contain spaces)
+    const api_secret = (process.env.CLOUDINARY_API_SECRET || "").trim();
+    const api_key    = (process.env.CLOUDINARY_API_KEY || "").trim();
+    const cloud_name = (process.env.CLOUDINARY_CLOUD_NAME || "").trim();
+
+    if (!api_secret || !api_key || !cloud_name) {
+      console.error("❌ Cloudinary credentials missing in Environment Variables!");
+      return res.status(500).json({ success: false, message: "Cloudinary configuration error." });
+    }
+
+    // ── 2. PREPARE PARAMETERS ────────────────────────────────────────────────
+    const timestamp = Math.floor(Date.now() / 1000);
     const folder = "student_receipts";
-    
-    // Cloudinary expects comma-separated string for signing allowed_formats
     const allowed_formats = "jpg,png,webp,pdf";
 
+    // Cloudinary signature requires alphabetically sorted parameters
+    // cloudinary.utils.api_sign_request handles this, but we must be EXPLICIT
     const params_to_sign = {
       timestamp: timestamp,
       folder: folder,
       allowed_formats: allowed_formats
     };
 
-    const signature = cloudinary.utils.api_sign_request(
-      params_to_sign,
-      process.env.CLOUDINARY_API_SECRET
-    );
+    // ── 3. GENERATE SIGNATURE ───────────────────────────────────────────────
+    const signature = cloudinary.utils.api_sign_request(params_to_sign, api_secret);
 
+    // ── 4. RETURN DATA TO FRONTEND ──────────────────────────────────────────
+    // Important: Frontend MUST receive exactly what was signed
     res.status(200).json({
       success: true,
       signature,
       timestamp,
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      folder: folder,
-      allowed_formats: allowed_formats
+      cloud_name,
+      api_key,
+      folder,
+      allowed_formats
     });
+
   } catch (error) {
     console.error("❌ Error generating signature:", error);
     res.status(500).json({ success: false, message: "Failed to generate upload signature." });
