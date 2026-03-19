@@ -704,7 +704,16 @@
                     body: JSON.stringify(payload),
                 });
 
-                const result = await response.json();
+                // --- ROBUST JSON PARSING ---
+                let result;
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    result = await response.json();
+                } else {
+                    const rawText = await response.text();
+                    console.error("Non-JSON response received:", rawText);
+                    throw new Error("The server returned an invalid response (HTML). This usually means the backend crashed or Vercel hit an error.");
+                }
 
                 if (response.ok && result.success) {
                     showToast('success', 'Application Submitted!', 'Your admission form is under review. We will notify you soon.');
@@ -719,12 +728,16 @@
                 } else if (response.status === 409) {
                     showToast('error', 'Duplicate TID', result.message || 'Already submitted.');
                 } else {
-                    showToast('error', 'Submission Failed', result.message || 'Something went wrong.');
+                    showToast('error', 'Submission Failed', result.message || result.error || 'Something went wrong.');
                 }
 
             } catch (error) {
                 console.error("Process Error:", error);
-                showToast('error', 'Process Failed', error.message || 'Check your connection and try again.');
+                // Better error message for the user
+                const errorMsg = error.message.includes("Unexpected token") 
+                    ? "The server failed to process your request. Our engineers have been notified."
+                    : error.message;
+                showToast('error', 'Process Failed', errorMsg || 'Check your connection and try again.');
             } finally {
                 btn.disabled = false;
                 btnText.textContent = 'Submit Application';

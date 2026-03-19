@@ -5,10 +5,10 @@
 // =============================================================================
 
 const express = require("express");
-const { getDB, saveDB } = require("../database/db");
+const { StudentAdmission } = require("../database/db");
 const router  = express.Router();
 
-router.post("/email-receipt", (req, res) => {
+router.post("/email-receipt", async (req, res) => {
   try {
     // 1. Receive Payload (from Google Apps Script via Make)
     const payload = req.body;
@@ -34,45 +34,37 @@ router.post("/email-receipt", (req, res) => {
       });
     }
 
-    const transactionId = match[0]; // Gets TID-1234 or just 1234 depending on match
-    const cleanTid = transactionId.replace("TID-", ""); // Let's try matching both the raw number or the prefixed one just in case
+    const transactionId = match[1]; // Get the raw number
+    const tidPrefixed = `TID-${transactionId}`;
 
-    // 3. Search Database for this TID
-    const db = getDB();
-    
-    // We search the database for either the raw number, or the number with 'TID-' prefix
-    const searchResult = db.exec(
-      "SELECT id FROM StudentAdmissions WHERE transaction_id = ? OR transaction_id = ?", 
-      [cleanTid, `TID-${cleanTid}`]
-    );
+    // 3. Search Database for this TID (MongoDB)
+    const admission = await StudentAdmission.findOne({
+      $or: [
+        { transaction_id: transactionId },
+        { transaction_id: tidPrefixed }
+      ]
+    });
 
-    if (searchResult.length === 0 || searchResult[0].values.length === 0) {
+    if (!admission) {
       return res.status(404).json({
         success: false,
-        message: `Transaction ID '${cleanTid}' found in email, but no matching student application was found in the database.`,
+        message: `Transaction ID '${transactionId}' found in email, but no matching student application was found in the database.`,
       });
     }
 
-    const studentId = searchResult[0].values[0][0];
-
     // 4. Update the verification status to "Verified"
-    db.run(
-      "UPDATE StudentAdmissions SET verification_status = 'Verified' WHERE id = ?",
-      [studentId]
-    );
-
-    // 5. Save the database atomically to disk
-    saveDB();
+    admission.verification_status = 'Verified';
+    await admission.save();
 
     return res.status(200).json({
       success: true,
-      message: `Successfully verified Transaction ID ${cleanTid} for Student ID ${studentId}`,
-      student_id: studentId
+      message: `Successfully verified Transaction ID ${transactionId} for student ${admission.full_name}`,
+      student_id: admission._id
     });
 
   } catch (error) {
     console.error("🔥 Error in Webhook /email-receipt:", error);
-    return res.status(500).json({ success: false, message: "Internal Webhook Error" });
+    return res.status(500).json({ success: false, message: "Internal Webhook Error", error: error.message });
   }
 });
 

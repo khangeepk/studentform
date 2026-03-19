@@ -11,7 +11,8 @@ const connectDB = async () => {
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (err) {
     console.error(`❌ MongoDB Error: ${err.message}`);
-    process.exit(1);
+    // DO NOT process.exit(1) in a serverless function (Vercel)
+    // Killing the process will return an HTML error page.
   }
 };
 

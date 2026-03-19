@@ -6,8 +6,6 @@
 const express = require("express");
 const multer  = require("multer");
 const cloudinary = require("cloudinary").v2;
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const { v4: uuidv4 } = require("uuid");
 const { StudentAdmission, Session } = require("../database/db");
 const { getCookies } = require("./auth");
 const router  = express.Router();
@@ -98,7 +96,8 @@ router.post(
       }
 
       // ── 3. Check for duplicate TID ───────────────────────────────────────
-      const existing = await StudentAdmission.findOne({ transaction_id: transaction_id.trim() });
+      const tid = String(transaction_id || "").trim();
+      const existing = await StudentAdmission.findOne({ transaction_id: tid });
       if (existing) {
         return res.status(409).json({
           success: false,
@@ -117,14 +116,14 @@ router.post(
 
       // ── 5. Create new record in MongoDB ─────────────────────────────────
       const admission = await StudentAdmission.create({
-        full_name:           full_name.trim(),
-        email:               email.trim().toLowerCase(),
-        whatsapp_number:     whatsapp_number.trim(),
-        course_selected:     course_selected.trim(),
-        transaction_id:      transaction_id.trim(),
+        full_name:           String(full_name || "").trim(),
+        email:               String(email || "").trim().toLowerCase(),
+        whatsapp_number:     String(whatsapp_number || "").trim(),
+        course_selected:     String(course_selected || "").trim(),
+        transaction_id:      tid,
         receipt_image_url:   receipt_url, // URL from direct Cloudinary upload
         user_id:             userId,
-        verification_status: "Verified"
+        verification_status: "Pending" // Match model default or schema
       });
 
       return res.status(201).json({
@@ -139,6 +138,7 @@ router.post(
       return res.status(500).json({
         success: false,
         message: "Internal server error. Please try again later.",
+        error: error.message || "Unknown Error"
       });
     }
   }
