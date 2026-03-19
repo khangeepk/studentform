@@ -41,6 +41,19 @@ app.get("/api/health", (req, res) => {
   res.json({ success: true, status: "Online", timestamp: new Date().toISOString() });
 });
 
+// TEMPORARY: Debug env vars (safe - only shows if keys are set, not values)
+app.get("/api/debug-env", (req, res) => {
+  res.json({
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? `SET (${process.env.CLOUDINARY_CLOUD_NAME.length} chars, val: ${process.env.CLOUDINARY_CLOUD_NAME})` : "MISSING",
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? `SET (${process.env.CLOUDINARY_API_KEY.length} chars)` : "MISSING",
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? `SET (${process.env.CLOUDINARY_API_SECRET.length} chars)` : "MISSING",
+    MONGODB_URI: process.env.MONGODB_URI ? `SET` : "MISSING",
+    NODE_ENV: process.env.NODE_ENV,
+    VERCEL: process.env.VERCEL
+  });
+});
+
+
 // 404
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.originalUrl}` });
