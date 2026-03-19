@@ -633,7 +633,8 @@
         }
 
         // ════════════════════════════════════════════════════════════════════
-        // FORM SUBMISSION — Direct Cloudinary Upload + Backend Data Save
+        // FORM SUBMISSION — Backend proxied Cloudinary Upload (Server-Side)
+        // No more signature / Invalid Signature issues!
         // ════════════════════════════════════════════════════════════════════
         const API_URL = '';
 
@@ -644,7 +645,6 @@
             const btnText  = document.getElementById('submitBtnText');
             const btnIcon  = document.getElementById('submitBtnIcon');
 
-            // Set loading state
             btn.disabled = true;
             btnText.textContent = 'Uploading Receipt...';
             btnIcon.className = 'fa-solid fa-spinner fa-spin text-lg';
@@ -655,40 +655,30 @@
                     showToast('error', 'Missing File', 'Please select a payment receipt.');
                     return;
                 }
-                const file = fileInput.files[0];
 
-                // 1. Get Signed Signature from Backend
-                const sigRes = await fetch(API_URL + '/api/upload-signature');
-                const sigData = await sigRes.json();
-                if (!sigData.success) {
-                    throw new Error(sigData.message || "Failed to get upload signature.");
-                }
+                // ── STEP 1: Send file to OUR backend → backend uploads to Cloudinary ──
+                const uploadData = new FormData();
+                uploadData.append('receipt', fileInput.files[0]);
 
-                // 2. Upload directly to Cloudinary
-                const cloudFormData = new FormData();
-                cloudFormData.append("file", file);
-                cloudFormData.append("api_key", sigData.api_key);
-                cloudFormData.append("timestamp", sigData.timestamp);
-                cloudFormData.append("signature", sigData.signature);
-                cloudFormData.append("folder", sigData.folder);
-                cloudFormData.append("allowed_formats", sigData.allowed_formats);
-
-                const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${sigData.cloud_name}/auto/upload`, {
+                const uploadRes = await fetch(API_URL + '/api/upload-receipt', {
                     method: 'POST',
-                    body: cloudFormData
+                    body: uploadData
                 });
 
-                const cloudResult = await cloudRes.json();
-                if (!cloudRes.ok) {
-                    console.error("Cloudinary Error:", cloudResult);
-                    throw new Error(cloudResult.error?.message || "Cloudinary upload failed (Signature or Config issue).");
+                let uploadResult;
+                try { uploadResult = await uploadRes.json(); } catch(e) {
+                    throw new Error('Server returned an invalid response while uploading the receipt.');
                 }
 
-                const receiptUrl = cloudResult.secure_url;
+                if (!uploadRes.ok || !uploadResult.success) {
+                    throw new Error(uploadResult.message || 'Receipt upload failed. Please try again.');
+                }
 
-                // 3. Submit combined data to Backend
+                const receiptUrl = uploadResult.receipt_url;
+
+                // ── STEP 2: Submit form data (with the receipt URL) to backend ─────────
                 btnText.textContent = 'Saving Application...';
-                
+
                 const payload = {
                     full_name:        document.getElementById('fullName').value,
                     email:            document.getElementById('email').value,
@@ -704,46 +694,38 @@
                     body: JSON.stringify(payload),
                 });
 
-                // --- ROBUST JSON PARSING ---
                 let result;
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.includes("application/json")) {
+                const ct = response.headers.get('content-type');
+                if (ct && ct.includes('application/json')) {
                     result = await response.json();
                 } else {
                     const rawText = await response.text();
-                    console.error("Non-JSON response received:", rawText);
-                    throw new Error("The server returned an invalid response (HTML). This usually means the backend crashed or Vercel hit an error.");
+                    console.error('Non-JSON response:', rawText);
+                    throw new Error('Server returned an unexpected response. Please try again.');
                 }
 
                 if (response.ok && result.success) {
-                    showToast('success', 'Application Submitted!', 'Your admission form is under review. We will notify you soon.');
+                    showToast('success', 'Application Submitted! ✅', 'Your admission form is under review. We will notify you soon.');
                     this.reset();
-                    // Reset File UI manually since reset() doesn't clear custom states
                     document.getElementById('uploadPlaceholder').classList.remove('hidden');
                     const preview = document.getElementById('uploadPreview');
-                    if (preview) {
-                        preview.classList.add('hidden');
-                        preview.classList.remove('flex');
-                    }
+                    if (preview) { preview.classList.add('hidden'); preview.classList.remove('flex'); }
                 } else if (response.status === 409) {
-                    showToast('error', 'Duplicate TID', result.message || 'Already submitted.');
+                    showToast('error', 'Duplicate TID', result.message || 'This Transaction ID already exists.');
                 } else {
                     showToast('error', 'Submission Failed', result.message || result.error || 'Something went wrong.');
                 }
 
             } catch (error) {
-                console.error("Process Error:", error);
-                // Better error message for the user
-                const errorMsg = error.message.includes("Unexpected token") 
-                    ? "The server failed to process your request. Our engineers have been notified."
-                    : error.message;
-                showToast('error', 'Process Failed', errorMsg || 'Check your connection and try again.');
+                console.error('Process Error:', error);
+                showToast('error', 'Process Failed', error.message || 'Check your connection and try again.');
             } finally {
                 btn.disabled = false;
                 btnText.textContent = 'Submit Application';
                 btnIcon.className = 'fa-solid fa-arrow-right text-lg transform group-hover:translate-x-1 transition-transform';
             }
         });
+
 
         // ════════════════════════════════════════════════════════════════════
         // STATUS TRACKING MODAL & LOGIC
